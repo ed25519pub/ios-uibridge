@@ -1,0 +1,6 @@
+.theos/
+.modulecache/
+.tmp/
+packages/
+*.deb
+obj/

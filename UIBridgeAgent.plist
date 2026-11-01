@@ -1,0 +1,16 @@
+{
+    Filter = {
+        Bundles = (
+            "com.apple.springboard",
+            "com.apple.Preferences",
+            "com.apple.mobilesafari",
+            "com.apple.MobileSMS",
+            "com.apple.mobiletimer",
+            "com.apple.Health",
+            "com.apple.calculator",
+            "com.apple.AppStore",
+            "com.apple.Maps",
+            "com.apple.Photos"
+        );
+    };
+}

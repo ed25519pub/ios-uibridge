@@ -1,0 +1,9 @@
+Package: com.yg.uibridge
+Name: UIBridge
+Version: 0.2.0
+Architecture: iphoneos-arm64
+Description: AI-drivable UI automation bridge for jailbroken iOS (accessibility tree dump + HID gesture injection), the iOS counterpart of Android's uiautomator2. No screenshots required: the agent reads a structured element tree and acts on elements or coordinates.
+Maintainer: YG
+Author: YG
+Section: System
+Depends: firmware (>= 15.0)

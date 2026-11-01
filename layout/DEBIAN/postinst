@@ -1,0 +1,15 @@
+#!/bin/sh
+set -e
+
+mkdir -p /var/jb/var/log
+chmod 755 /var/jb/var/log
+
+# (Re)bootstrap the daemon into the root launchd domain. Dopamine's launchd picks
+# up /var/jb/Library/LaunchDaemons automatically at jailbreak time; this handles
+# the "install while already jailbroken" case.
+launchctl bootout system /var/jb/Library/LaunchDaemons/com.yg.uibridge.plist 2>/dev/null || true
+sleep 1
+launchctl bootstrap system /var/jb/Library/LaunchDaemons/com.yg.uibridge.plist 2>/dev/null || true
+launchctl kickstart -k system/com.yg.uibridge 2>/dev/null || true
+
+exit 0
