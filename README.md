@@ -40,7 +40,9 @@ ssh -p $SSH_PORT root@$DEVICE \
   '/var/jb/usr/bin/dpkg -i /tmp/com.yg.uibridge_0.2.0_iphoneos-arm64.deb'
 
 # 3. 生效（tweak 需要重启 SpringBoard 才会注入 App）
-ssh -p $SSH_PORT root@$DEVICE 'killall -9 SpringBoard'
+#    必须用 mobile 身份执行：root 杀掉 SpringBoard 时它不会带着 tweak 注入环境重生
+#    mobile 默认密码 alpine（首次登录后请改）
+ssh mobile@$DEVICE 'killall -9 SpringBoard'
 
 # 4. 验证
 python3 -c "
@@ -48,6 +50,14 @@ import sys; sys.path.insert(0,'client'); import uibridge
 print(uibridge.Device('$DEVICE').info())
 "
 ```
+
+> **mobile 用户 SSH 登录失败时**（`Permission denied (publickey,password)`）：iOS 的 `sshd`
+> 默认 `AuthorizedKeysFile .ssh/authorized_keys`，但 `/var/mobile` 权限是 `drwx--x--x`，
+> 公钥登录常被拒。用密码登录即可；若要免密，以 root 执行：
+>
+> ```bash
+> ssh root@$DEVICE 'printf "StrictModes no\n" >> /var/jb/etc/ssh/sshd_config; killall -HUP sshd'
+> ```
 
 `postinst` 会自动执行 `launchctl bootstrap system /var/jb/Library/LaunchDaemons/com.yg.uibridge.plist`。
 手工重启 daemon：

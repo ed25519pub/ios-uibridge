@@ -436,6 +436,9 @@ static void UBLog(NSString *format, ...) {
 }
 
 %ctor {
+    // NSLog reaches the device syslog regardless of the app sandbox, which makes it
+    // the only reliable "did I actually get injected?" signal from inside an app.
+    NSLog(@"[uibridge-agent] ctor fired pid=%d bundle=%@", getpid(), UBBundleId());
     UBLog(@"ctor fired bundle=%@", UBBundleId());
     // Wait for UIKit to come up; every UIApplication-bearing process gets this tweak.
     dispatch_async(dispatch_get_global_queue(QOS_CLASS_UTILITY, 0), ^{
