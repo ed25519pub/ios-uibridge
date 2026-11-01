@@ -15,6 +15,7 @@
 #import "LCCommands.h"
 #import "AXBridge.h"
 #import "HIDInjector.h"
+#import "LCServer.h"
 #import "UBAgentHub.h"
 
 #import <CoreFoundation/CoreFoundation.h>
@@ -123,6 +124,20 @@ static NSString *gToken = nil;
     UBAgentHub *hub = [UBAgentHub shared];
     NSString *target = requested.length ? requested : [self frontmostBundleId];
 
+    // 1. AX service app -- the only route that works on iOS 17 (axserver lives in
+    //    the graphical session bootstrap, which only a GUI process inherits).
+    if ([LCServer hasWorker]) {
+        NSDictionary *reply = [LCServer callWorker:@"dump"
+                                              args:@{ @"depth": @(depth) }
+                                           timeout:20.0];
+        if ([reply[@"ok"] boolValue]) {
+            NSMutableDictionary *result = [reply[@"result"] mutableCopy];
+            result[@"source"] = @"ax-worker";
+            return Ok(result);
+        }
+        NSLog(@"[uibridge] ax worker dump failed: %@", reply[@"error"]);
+    }
+
     if (target.length && [hub hasAgent:target]) {
         NSDictionary *resp = [hub call:@"dump" args:@{ @"depth": @(depth) } bundleId:target timeout:12.0];
         if (![resp[@"ok"] boolValue]) return Fail(resp[@"error"] ?: @"agent dump failed");
@@ -155,7 +170,7 @@ static NSString *gToken = nil;
     // ---------------------------------------------------------------- meta
     if ([cmd isEqualToString:@"ping"]) {
         return Ok(@{ @"pong": @YES, @"ax": @([ax isReady]), @"hid": @([hid isReady]),
-                     @"agents": @([hub agents].count) });
+                     @"agents": @([hub agents].count), @"worker": @([LCServer hasWorker]) });
     }
 
     if ([cmd isEqualToString:@"agents"]) {
@@ -171,7 +186,8 @@ static NSString *gToken = nil;
     }
 
     if ([cmd isEqualToString:@"diag"]) {
-        return Ok(@{ @"ax": [ax diagnostics], @"hid": [hid diagnostics], @"agents": [hub agents] ?: @[] });
+        return Ok(@{ @"ax": [ax diagnostics], @"hid": [hid diagnostics],
+                     @"agents": [hub agents] ?: @[], @"workers": [LCServer workers] ?: @[] });
     }
 
     if ([cmd isEqualToString:@"symbols"]) {
