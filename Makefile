@@ -33,5 +33,23 @@ uibridge_CODESIGN_FLAGS = -S$(CURDIR)/entitlements.plist
 
 include $(THEOS_MAKE_PATH)/tool.mk
 
+# ---------------------------------------------------------------- AX service app
+# A real GUI process, so it inherits the user session bootstrap and can reach
+# com.apple.iphone.axserver -- which a root daemon cannot on iOS 17.
+# Built as a `tool` whose install path happens to be the .app's executable slot;
+# Info.plist comes from layout/Applications/UIBridgeSvc.app/Info.plist.
+TOOL_NAME = UIBridgeSvc
+UIBridgeSvc_FILES = app/main.m src/AXBridge.m src/HIDInjector.m src/LCServer.m src/LCCommands.m src/UBAgentHub.m
+UIBridgeSvc_CFLAGS = -fobjc-arc -Isrc -Wno-deprecated-declarations
+UIBridgeSvc_FRAMEWORKS = Foundation CoreFoundation UIKit AVFoundation
+UIBridgeSvc_LDFLAGS = -lobjc
+UIBridgeSvc_INSTALL_PATH = /Applications/UIBridgeSvc.app
+UIBridgeSvc_CODESIGN_FLAGS = -S$(CURDIR)/app-entitlements.plist
+
+include $(THEOS_MAKE_PATH)/tool.mk
+
+# ---------------------------------------------------------------- post-install
+# Respring must be done as `mobile`: root's killall makes SpringBoard come back
+# without the tweak injection environment.
 after-install::
-	install.exec "killall -9 SpringBoard 2>/dev/null; launchctl bootout system /var/jb/Library/LaunchDaemons/com.yg.uibridge.plist 2>/dev/null; launchctl bootstrap system /var/jb/Library/LaunchDaemons/com.yg.uibridge.plist 2>/dev/null; launchctl kickstart -k system/com.yg.uibridge 2>/dev/null; true"
+	install.exec "su mobile -c 'killall -9 SpringBoard' 2>/dev/null; launchctl bootout system /var/jb/Library/LaunchDaemons/com.yg.uibridge.plist 2>/dev/null; launchctl bootstrap system /var/jb/Library/LaunchDaemons/com.yg.uibridge.plist 2>/dev/null; launchctl kickstart -k system/com.yg.uibridge 2>/dev/null; /var/jb/usr/bin/uicache -p /var/jb/Applications/UIBridgeSvc.app 2>/dev/null; true"
